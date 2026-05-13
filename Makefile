@@ -15,3 +15,8 @@ test:
 
 lint:
 	golangci-lint run -v
+
+emit-audit-event:
+	curl -X POST http://localhost:8080/events \
+      -H "Content-Type: application/json" \
+      -d '{"id":"1","source":"auth","action":"login","actor":"alex","timestamp":"2026-05-13T10:00:00Z"}'
