@@ -1,20 +1,37 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 )
 
 func main() {
-	mux := http.NewServeMux()
+	brokerAddress := "localhost:9092"
+	topic := "audit-events"
 
-	kafkaWriter := newKafkaWriter("localhost:9092", "audit-events")
+	kafkaWriter := newKafkaWriter(brokerAddress, topic)
 	defer func() {
 		if err := kafkaWriter.Close(); err != nil {
 			log.Printf("error closing kafka writer: %v", err)
 		}
 	}()
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	kafkaReader := newKafkaReader(brokerAddress, topic, "audit-consumer-group")
+	defer func() {
+		if err := kafkaReader.Close(); err != nil {
+			log.Printf("error closing kafka reader: %v", err)
+		}
+	}()
+
+	go consumeEvents(ctx, kafkaReader)
+
+	mux := http.NewServeMux()
 	mux.HandleFunc("GET /ping", handlePing)
 	mux.HandleFunc("POST /events", handleCreateEvent(kafkaWriter))
 
