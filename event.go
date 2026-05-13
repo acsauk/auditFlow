@@ -10,3 +10,7 @@ type Event struct {
 	Timestamp time.Time         `json:"timestamp"`
 	Metadata  map[string]string `json:"metadata"`
 }
+
+func (e Event) Valid() bool {
+	return e.ID != "" && e.Source != "" && e.Action != "" && e.Actor != ""
+}
